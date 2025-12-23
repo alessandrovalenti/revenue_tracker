@@ -118,7 +118,7 @@ def add_revenue():
     revenue = float(revenue_input) if revenue_input.strip() else None
 
     kind = input("Enter the kind of day (default=ordinary): ")
-    kind = kind.strip() or None
+    kind = kind.strip() or "ordinary"
 
     who = input("Enter who was at the market (format=X,Y,...): ")
     who = who.strip() or None
@@ -133,9 +133,9 @@ def add_revenue():
         print(f"No database found, creating a new one")
         database.create_table()
     if database.add_revenue(date, city, declared_revenue, revenue, kind, who, notes):
-        return
-    else:
         print(f"\nSaved data: {date}, {city}, {declared_revenue} EUR\n")
+    else:
+        return
 
 
 def visualize_revenues():

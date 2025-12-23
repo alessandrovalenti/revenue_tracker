@@ -22,8 +22,6 @@ else:
     DATABASE_PATH = DEFAULT_DB_PATH
 
 DATABASE_PATH = DATABASE_PATH.resolve()
-# Ensure target folder exists so sqlite can create the file if needed
-DATABASE_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 ####### DATABASE CONNECTION #######
 def create_connection():
@@ -84,7 +82,6 @@ def create_table():
 
 def add_revenue(date, city, declared_revenue, revenue=None, kind='ordinary', who=None, notes=None):
     """Insert an income entry into the database."""
-    create_table()
     conn = create_connection()
     if conn:
         cursor = conn.cursor()
@@ -124,7 +121,6 @@ def add_revenue(date, city, declared_revenue, revenue=None, kind='ordinary', who
 
 def get_last_revenues(n=1):
     """Retrieve the last revenue entry from the database."""
-    create_table()
     if not table_exists():
         print("Revenues table does not exist.")
         return
@@ -139,7 +135,6 @@ def get_last_revenues(n=1):
 
 def get_revenue_by_date(date):
     """Retrieve revenue for a specific date."""
-    create_table()
     if not table_exists():
         print("Revenues table does not exist.")
         return
@@ -154,7 +149,6 @@ def get_revenue_by_date(date):
 
 def get_table():
     """Retrieve the entire table from the database."""
-    create_table()
     if not table_exists():
         print("Revenues table does not exist.")
         return 
