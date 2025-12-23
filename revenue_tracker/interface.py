@@ -18,10 +18,8 @@ def menu():
             add_revenue()
         case '2':
             # Call the function to visualize revenues
-            try:
-                database.get_table()
-            except Exception as e:
-                print(f"\nNo database found\n")
+            if not database.table_exists():
+                print("Revenues table does not exist.")
                 return
             print("1. Visualize last 5 revenues")
             print("2. Visualize revenue by date")
@@ -49,10 +47,8 @@ def menu():
                     print("\nInvalid choice.\n")
         case '3':
             # Call the function to manage revenues
-            try:
-                database.get_table()
-            except Exception as e:
-                print(f"\nNo database found\n")
+            if not database.table_exists():
+                print("Revenues table does not exist.")
                 return
             print("1. Delete revenue by date")
             print("2. Delete revenue by ID")

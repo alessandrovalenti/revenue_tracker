@@ -9,22 +9,44 @@ from revenue_tracker.utils import default_who
 
 # Path to your database file
 load_dotenv()
-DEFAULT_DB_PATH = Path(__file__).resolve().parent.parent / "data" / "revenues.db"
-DATABASE_PATH = Path(
-    os.environ.get("DATABASE_PATH", DEFAULT_DB_PATH)
-).resolve()
 
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_DB_PATH = PROJECT_ROOT / "data" / "revenues.db"
+
+env_db = os.environ.get("DATABASE_PATH")
+
+if env_db:
+    p = Path(env_db)
+    DATABASE_PATH = p if p.is_absolute() else PROJECT_ROOT / p
+else:
+    DATABASE_PATH = DEFAULT_DB_PATH
+
+DATABASE_PATH = DATABASE_PATH.resolve()
+# Ensure target folder exists so sqlite can create the file if needed
+DATABASE_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 ####### DATABASE CONNECTION #######
 def create_connection():
     """Establish a connection to the SQLite database only if the database exists."""
     try:
-        conn = sqlite3.connect(DATABASE_PATH)
+        conn = sqlite3.connect(str(DATABASE_PATH))
         return conn
     except sqlite3.Error as e:
         print(f"Error connecting to database: {e}")
         return None
     
+def table_exists():
+    """Check if the revenues table exists in the database."""
+    conn = create_connection()
+    if conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='revenues'"
+        )
+        exists = cursor.fetchone() is not None
+        conn.close()
+        return exists
+    return False
 
 #### CREATE FUNCTIONS ####
 
@@ -33,6 +55,9 @@ def create_table():
     conn = create_connection()
     if conn:
         cursor = conn.cursor()
+        exists = cursor.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='revenues'"
+        ).fetchone()
         cursor.execute('''
         CREATE TABLE IF NOT EXISTS revenues (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -52,12 +77,14 @@ def create_table():
         ''')
         conn.commit()
         conn.close()
-        print("Table 'revenues' created.")
+        if not exists:
+            print("Table 'revenues' created.")
     else:
         print("Failed to create table due to connection issues.")
 
 def add_revenue(date, city, declared_revenue, revenue=None, kind='ordinary', who=None, notes=None):
     """Insert an income entry into the database."""
+    create_table()
     conn = create_connection()
     if conn:
         cursor = conn.cursor()
@@ -68,6 +95,7 @@ def add_revenue(date, city, declared_revenue, revenue=None, kind='ordinary', who
             day_temp, day_felt_temp, wind_speed, main_weather, weather_description = get_day_weather(city, date)
         except Exception as e:
             print(f"Failed to retrieve weather data: {e}")
+            conn.close()
             return
         
         # Assign default values for 'chi' if not provided
@@ -86,6 +114,7 @@ def add_revenue(date, city, declared_revenue, revenue=None, kind='ordinary', who
         
         conn.commit()
         conn.close()
+        return True
     else:
         print("Failed to insert record due to connection issues.")
 
@@ -95,6 +124,10 @@ def add_revenue(date, city, declared_revenue, revenue=None, kind='ordinary', who
 
 def get_last_revenues(n=1):
     """Retrieve the last revenue entry from the database."""
+    create_table()
+    if not table_exists():
+        print("Revenues table does not exist.")
+        return
     conn = create_connection()
     if conn:
         df = pd.read_sql_query(f"SELECT * FROM revenues ORDER BY id DESC LIMIT {n} ", conn)
@@ -106,6 +139,10 @@ def get_last_revenues(n=1):
 
 def get_revenue_by_date(date):
     """Retrieve revenue for a specific date."""
+    create_table()
+    if not table_exists():
+        print("Revenues table does not exist.")
+        return
     conn = create_connection()
     if conn:
         df = pd.read_sql_query("SELECT * FROM revenues WHERE date = ?", conn, params=(date,))
@@ -117,6 +154,10 @@ def get_revenue_by_date(date):
 
 def get_table():
     """Retrieve the entire table from the database."""
+    create_table()
+    if not table_exists():
+        print("Revenues table does not exist.")
+        return 
     conn = create_connection()
     df = pd.read_sql_query("SELECT * FROM revenues ORDER BY date DESC", conn)
     conn.close()
@@ -127,6 +168,9 @@ def get_table():
 
 def del_revenue_by_id(id):
     """Delete revenue by ID."""
+    if not table_exists():
+        print("Revenues table does not exist.")
+        return
     conn = create_connection()
     if conn:
         cursor = conn.cursor()
@@ -140,6 +184,9 @@ def del_revenue_by_id(id):
 
 def del_revenue_by_date(date, city):
     """Delete revenue for a specific date."""
+    if not table_exists():
+        print("Revenues table does not exist.")
+        return
     conn = create_connection()
     if conn:
         cursor = conn.cursor()
@@ -153,6 +200,9 @@ def del_revenue_by_date(date, city):
 
 def del_table():
     """Delete the entire table from the database."""
+    if not table_exists():
+        print("Revenues table does not exist.")
+        return
     conn = create_connection()
     if conn:
         cursor = conn.cursor()
