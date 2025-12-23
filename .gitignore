@@ -4,3 +4,4 @@ __pycache__/
 .venv/
 cartelli/
 data/revenues.db
+revenue_tracker/who_defaults.json
